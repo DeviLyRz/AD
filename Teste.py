@@ -80,11 +80,11 @@ root.title("UNIMED")
 root.geometry("500x700")
 
 # Define o ícone da janela
-try:
-    root.iconbitmap("icone.ico")  # Usa um arquivo .ico no Windows
-except Exception:
-    icon = PhotoImage(file="C:/Users/erick.penna/Downloads/unimed.png")  # Alternativa para outros sistemas com .png
-    root.iconphoto(True, icon)
+#try:
+ #   root.iconbitmap("icone.ico")  # Usa um arquivo .ico no Windows
+#except Exception:
+#    icon = PhotoImage(file="C:/Users/erick.penna/Downloads/unimed.png")  # Alternativa para outros sistemas com .png
+#    root.iconphoto(True, icon)
 
 # Frame principal para centralizar o conteúdo
 frame = ctk.CTkFrame(root)
