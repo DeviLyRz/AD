@@ -51,6 +51,10 @@ def adicionar_usuario():
         ou_path_list = [f"OU={ou.strip()}" for ou in ou_path_input.split(',')]
         ou_path = ",".join(ou_path_list)
 
+        # Garantir que o valor de var_enable e var_changepwd sejam sempre booleanos
+        enable = var_enable.get() or False  # Se não marcado, assume False (usuário desabilitado)
+        changepwd = var_changepwd.get() or False  # Se não marcado, assume False (não alterar a senha)
+
         usuario = {
             'cn': entry_nome_completo.get(),
             'samid': entry_login.get(),
@@ -61,21 +65,22 @@ def adicionar_usuario():
             'dept': entry_departamento.get(),
             'desc': entry_descricao.get(),
             'pwd': entry_senha.get(),
-            'enable': var_enable.get(),
-            'changepwd': var_changepwd.get()
+            'enable': enable,
+            'changepwd': changepwd
         }
 
-        for key, value in usuario.items():
-            if not value:
-                messagebox.showerror("Erro", f"Por favor, preencha o campo '{key}'.")
-                return
+        # Verifica se algum campo obrigatório está vazio
+        if not all([usuario['cn'], usuario['samid'], usuario['fn'], usuario['ln'], usuario['email'], 
+                    usuario['ou_path'], usuario['pwd'], usuario['dept']]):
+            messagebox.showerror("Erro", "Por favor, preencha todos os campos obrigatórios.")
+            return
 
         usuarios.append(usuario)
         limpar_campos()
         messagebox.showinfo("Sucesso", f"Usuário '{usuario['cn']}' adicionado com sucesso!")
 
     except Exception as e:
-        messagebox.showerror("Erro", f"Ocorreu um erro ao adicionar o usuário: {str(e)}")
+        messagebox.showerror("Erro", f"Ocorreu um erro inesperado: {str(e)}")
 
 # Função para limpar os campos após o preenchimento dos dados de um usuário
 def limpar_campos():
