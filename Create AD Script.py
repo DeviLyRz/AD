@@ -78,7 +78,7 @@ ctk.set_default_color_theme("green")  # Tema verde
 
 # Criando a janela principal
 root = ctk.CTk()
-root.title("UNIMED")
+root.title("AD")
 root.geometry("500x700")
 
 # Define o ícone da janela
