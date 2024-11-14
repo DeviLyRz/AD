@@ -1,8 +1,9 @@
 import customtkinter as ctk
-from tkinter import messagebox
+from tkinter import messagebox, PhotoImage  # Importação adicional para suporte a ícones .png
 
 # Função para gerar o comando dsadd
-def gerar_comando_usuario(usuario, dc1, dc2):
+def gerar_comando_usuario(usuario):
+    dc1, dc2 = "campos", "local"  # Define os valores padrão
     upn = f"{usuario['samid']}@{dc1}.{dc2}"
     dsadd_command = (
         f'dsadd user "CN={usuario["cn"]},{usuario["ou_path"]},DC={dc1},DC={dc2}" '
@@ -15,21 +16,23 @@ def gerar_comando_usuario(usuario, dc1, dc2):
         f'-mustchpwd {"yes" if usuario["changepwd"] else "no"} '
         f'-disabled {"yes" if not usuario["enable"] else "no"} '
         f'-dept "{usuario["dept"]}" '
-        f'-desc "{usuario["desc"]}"\n'
+        f'-desc "{usuario["desc"]}" '
+        f'-title "{usuario["desc"]}" '  # Título recebe o valor da descrição
+        f'-office "{usuario["dept"]}" '  # Office recebe o valor do departamento
+        f'-display "{usuario["cn"]}"\n'  # DisplayName recebe o valor do CN
     )
+
     return dsadd_command
 
 # Função para gerar o arquivo .bat
 def gerar_bat():
-    dc1, dc2 = entry_dc1.get(), entry_dc2.get()
-
     if not usuarios:
         messagebox.showerror("Erro", "Por favor, adicione ao menos um usuário.")
         return
 
     with open("adicionar_usuarios.bat", 'w') as bat_file:
         for usuario in usuarios:
-            bat_file.write(gerar_comando_usuario(usuario, dc1, dc2))
+            bat_file.write(gerar_comando_usuario(usuario))
 
     messagebox.showinfo("Sucesso", "Comandos DSADD foram exportados para o arquivo adicionar_usuarios.bat")
 
@@ -71,26 +74,32 @@ usuarios = []
 
 # Configuração inicial para customtkinter
 ctk.set_appearance_mode("Dark")  # Tema escuro
-ctk.set_default_color_theme("blue")  # Tema azul
+ctk.set_default_color_theme("green")  # Tema verde
 
 # Criando a janela principal
 root = ctk.CTk()
-root.title("Criar usuário no AD")
+root.title("UNIMED")
 root.geometry("500x700")
+
+# Define o ícone da janela
+try:
+    root.iconbitmap("icone.ico")  # Usa um arquivo .ico no Windows
+except Exception:
+    icon = PhotoImage(file="C:/Users/erick.penna/Downloads/unimed.png")  # Alternativa para outros sistemas com .png
+    root.iconphoto(True, icon)
 
 # Frame principal para centralizar o conteúdo
 frame = ctk.CTkFrame(root)
-frame.grid(sticky="nsew", padx=20, pady=20)
+frame.grid(sticky="nsew", padx=43, pady=40)
 frame.grid_columnconfigure(0, weight=1)
 frame.grid_columnconfigure(1, weight=1)
 
 # Título da janela
 titulo = ctk.CTkLabel(frame, text="Criar Usuário AD", font=("Arial", 16, "bold"))
-titulo.grid(row=0, column=0, columnspan=2, pady=10)
+titulo.grid(row=0, column=0, columnspan=2, pady=10, sticky="n")
 
 # Campos de entrada e labels
 labels_texts = [
-    "Domínio antes do ponto (DC1):", "Domínio depois do ponto (DC2):",
     "Nome completo do usuário:", "Login do domínio (SAMID):",
     "Primeiro nome:", "Último nome:", "Email:",
     "Caminho da OU (separado por vírgulas):", "Departamento:", "Descrição:", "Senha:"
@@ -105,25 +114,25 @@ for i, text in enumerate(labels_texts):
     entry.grid(row=i+1, column=1, pady=5)
     entries.append(entry)
 
-entry_dc1, entry_dc2, entry_nome_completo, entry_login, entry_primeiro_nome, \
+entry_nome_completo, entry_login, entry_primeiro_nome, \
 entry_ultimo_nome, entry_email, entry_ou_path, entry_departamento, \
 entry_descricao, entry_senha = entries
 
 # Checkbox para habilitar/desabilitar o usuário
 var_enable = ctk.BooleanVar(value=True)
-chk_enable = ctk.CTkCheckBox(frame, text="Usuário habilitado", variable=var_enable)
+chk_enable = ctk.CTkCheckBox(frame, text="Usuário habilitado", variable=var_enable, fg_color="#028251")
 chk_enable.grid(row=len(labels_texts)+1, column=0, columnspan=2, pady=5)
 
 # Checkbox para senha a ser alterada
 var_changepwd = ctk.BooleanVar(value=True)
-chk_changepwd = ctk.CTkCheckBox(frame, text="Usuário deve alterar a senha", variable=var_changepwd)
+chk_changepwd = ctk.CTkCheckBox(frame, text="Usuário deve alterar a senha", variable=var_changepwd, fg_color="#028251")
 chk_changepwd.grid(row=len(labels_texts)+2, column=0, columnspan=2, pady=5)
 
-# Botões
-btn_adicionar = ctk.CTkButton(frame, text="Adicionar Usuário", command=adicionar_usuario)
+# Botões com cor personalizada
+btn_adicionar = ctk.CTkButton(frame, text="Adicionar Usuário", command=adicionar_usuario, fg_color="#028251")
 btn_adicionar.grid(row=len(labels_texts)+3, column=0, columnspan=2, pady=10)
 
-btn_gerar_bat = ctk.CTkButton(frame, text="Gerar Arquivo .BAT", command=gerar_bat)
+btn_gerar_bat = ctk.CTkButton(frame, text="Gerar Arquivo .BAT", command=gerar_bat, fg_color="#028251")
 btn_gerar_bat.grid(row=len(labels_texts)+4, column=0, columnspan=2, pady=10)
 
 # Rodando a interface
