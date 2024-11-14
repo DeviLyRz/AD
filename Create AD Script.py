@@ -85,7 +85,7 @@ root.geometry("500x700")
 try:
     root.iconbitmap("icone.ico")  # Usa um arquivo .ico no Windows
 except Exception:
-    icon = PhotoImage(file="C:/Users/erick.penna/Downloads/unimed.png")  # Alternativa para outros sistemas com .png
+    icon = PhotoImage(file="C:/path")  # Alternativa para outros sistemas com .png
     root.iconphoto(True, icon)
 
 # Frame principal para centralizar o conteúdo
