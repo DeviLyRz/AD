@@ -1,4 +1,6 @@
 import customtkinter as ctk
+import os
+import subprocess
 from tkinter import messagebox, PhotoImage
 
 # Função para gerar o comando dsadd
@@ -24,44 +26,54 @@ def gerar_comando_usuario(usuario):
 
     return dsadd_command
 
-# Função para gerar o comando dsmod
-def gerar_comando_dsmod(nome, desativar=True):
-    dc1, dc2 = "campos", "local"
-    status = "yes" if desativar else "no"
-    dsmod_command = (
-        f'dsmod user "CN={nome},DC={dc1},DC={dc2}" -disabled {status}\n'
-    )
-    return dsmod_command
-
-# Função para gerar o arquivo .bat de criação de usuários
-def gerar_bat():
+# Função para adicionar usuário ao AD
+def adicionar_usuario_ad():
     if not usuarios:
         messagebox.showerror("Erro", "Por favor, adicione ao menos um usuário.")
         return
 
-    with open("adicionar_usuarios.bat", 'w') as bat_file:
-        for usuario in usuarios:
-            bat_file.write(gerar_comando_usuario(usuario))
+    arquivo_bat = "adicionar_usuarios.bat"
+    try:
+        with open(arquivo_bat, 'w') as bat_file:
+            for usuario in usuarios:
+                bat_file.write(gerar_comando_usuario(usuario))
 
-    messagebox.showinfo("Sucesso", "Foi gerado o arquivo adicionar_usuarios.bat")
+        messagebox.showinfo("Sucesso", f"Arquivo '{arquivo_bat}' criado com sucesso.")
 
-# Função para gerar o arquivo .bat para desativação/ativação de usuários
-def desativar_ou_ativar_bat():
+    except Exception as e:
+        messagebox.showerror("Erro", f"Ocorreu um erro: {e}")
+
+
+# Função para gerar arquivo .BAT
+def gerar_bat_ad():
     nomes_usuarios = entry_nome_desativar.get("1.0", ctk.END).strip().splitlines()
     if not nomes_usuarios:
         messagebox.showerror("Erro", "Por favor, insira ao menos um nome de usuário.")
         return
 
-    desativar = var_ativar_ou_desativar.get()  # Se for True, desativar; se False, ativar
-    arquivo_bat = "desativar_usuarios.bat" if desativar else "ativar_usuarios.bat"
+    desativar = var_ativar_ou_desativar.get()  # True = Desativar | False = Ativar
+    acao = "desativar" if desativar else "ativar"
+    arquivo_bat = f"{acao}_usuarios.bat"
 
-    with open(arquivo_bat, 'w') as bat_file:
-        for nome_usuario in nomes_usuarios:
-            if nome_usuario.strip():
-                bat_file.write(gerar_comando_dsmod(nome_usuario.strip(), desativar))
+    comandos = []
+    for nome in nomes_usuarios:
+        if nome.strip():
+            comando_powershell = f"""
+Get-ADUser -Filter "name -like '*{nome.strip()}*'" -SearchBase "DC=campos,DC=local" -Properties DistinguishedName |
+ForEach-Object {{ dsmod user "$($_.DistinguishedName)" -disabled {"yes" if desativar else "no"} }}
+"""
+            comandos.append(f'powershell.exe -Command "{comando_powershell.strip()}"')
 
-    status = "desativados" if desativar else "ativados"
-    messagebox.showinfo("Sucesso", f"Comandos para {status} foram exportados para o arquivo {arquivo_bat}")
+    try:
+        with open(arquivo_bat, 'w') as bat_file:
+            bat_file.write("@echo off\n")
+            bat_file.write("\n".join(comandos))
+
+        messagebox.showinfo("Sucesso", f"Arquivo '{arquivo_bat}' criado com sucesso.")
+
+    except Exception as e:
+        messagebox.showerror("Erro", f"Ocorreu um erro: {e}")
+
 
 # Função para adicionar usuários à lista
 def adicionar_usuario():
@@ -151,28 +163,29 @@ chk_changepwd.grid(row=len(txt_labels)+2, column=0, columnspan=2, pady=5, sticky
 
 # Título da seção de desativação
 titulo_desativar = ctk.CTkLabel(frame, text="Desativação/Ativação de Usuários", font=("Arial", 16, "bold"))
-titulo_desativar.grid(row=len(txt_labels)+3, column=0, columnspan=2, pady=10, sticky="n")
+titulo_desativar.grid(row=len(txt_labels)+5, column=0, columnspan=2, pady=10, sticky="n")
 
 # Campo para nomes de usuários a serem desativados/ativados
 label_nome_desativar = ctk.CTkLabel(frame, text="Nomes para desativar/ativar:", font=("Arial", 11))
-label_nome_desativar.grid(row=len(txt_labels)+4, column=0, sticky="n", padx=10, pady=0)
+label_nome_desativar.grid(row=len(txt_labels)+6, column=0, sticky="n", padx=10, pady=0)
 
 # Caixa de texto para inserção dos nomes dos usuários a serem desativados/ativados
 entry_nome_desativar = ctk.CTkTextbox(frame, width=200, height=25)
-entry_nome_desativar.grid(row=len(txt_labels)+4, column=1, pady=0)
+entry_nome_desativar.grid(row=len(txt_labels)+6, column=1, pady=0)
 
 # Checkbox para selecionar a opção de desativar ou ativar
 chk_ativar_ou_desativar = ctk.CTkCheckBox(frame, text="Desativar usuários em massa", variable=var_ativar_ou_desativar, fg_color="#028251")
-chk_ativar_ou_desativar.grid(row=len(txt_labels)+5, column=0, columnspan=2, pady=5, sticky="w")
+chk_ativar_ou_desativar.grid(row=len(txt_labels)+7, column=0, columnspan=2, pady=5, sticky="w")
 
 # Botões de ação
 btn_adicionar = ctk.CTkButton(frame, text="Adicionar Usuário", command=adicionar_usuario, fg_color="#028251")
-btn_adicionar.grid(row=len(txt_labels)+6, column=0, columnspan=2, pady=10)
+btn_adicionar.grid(row=len(txt_labels)+3, column=0, columnspan=2, pady=10)
 
-btn_gerar_bat = ctk.CTkButton(frame, text="Gerar Arquivo .BAT", command=gerar_bat, fg_color="#028251")
-btn_gerar_bat.grid(row=len(txt_labels)+7, column=0, columnspan=2, pady=10)
+btn_adicionar_usuario = ctk.CTkButton(frame, text="Criar BAT AD", command=adicionar_usuario_ad, fg_color="#028251")
+btn_adicionar_usuario.grid(row=len(txt_labels)+4, column=0, columnspan=2, pady=10)
 
-btn_desativar_bat = ctk.CTkButton(frame, text="Gerar Comandos para Ativar/Desativar", command=desativar_ou_ativar_bat, fg_color="#028251")
-btn_desativar_bat.grid(row=len(txt_labels)+8, column=0, columnspan=2, pady=10)
+btn_gerar_bat = ctk.CTkButton(frame, text="Gerar Arquivo .BAT", 
+                              command=gerar_bat_ad, fg_color="#028251")
+btn_gerar_bat.grid(row=len(txt_labels)+8, column=0, columnspan=2, pady=10)
 
 root.mainloop()
